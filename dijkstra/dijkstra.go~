@@ -1,0 +1,122 @@
+package main
+
+import(
+	"fmt"
+        "strings"
+        "io/ioutil"
+        "os"
+        "sort"
+)
+type Vertex struct {
+	id     int
+	dist   int
+	parent int
+	nbr    []int
+}
+
+type Vertices []*Vertex
+
+func (v Vertices) Len() int {
+	return len(v)
+}
+
+func (v Vertices) Swap(i, j int) {
+	v[i], v[j] = v[j], v[i]
+}
+
+func (v Vertices) Less(i, j int) bool{
+	return v[i].dist < v[j].dist 
+}
+
+func Contains(ints []int, i int) bool {
+	for _,val := range ints {
+		if val == i {
+			return true 
+		}
+	}
+	return false
+}
+
+func main(){
+	if len(os.Args) != 4 {
+		panic("Usage: ./dijkstra FILENAME SOURCE DEST")
+	}
+	var source int 
+	var dest int
+	fmt.Sscan(os.Args[2], &source)
+	fmt.Sscan(os.Args[3], &dest)
+	fileName := os.Args[1]
+
+	buff,_ := ioutil.ReadFile(fileName)
+	contentString := string(buff)
+	lines := strings.Split(contentString, "\n")
+	
+	var numVert int
+	fmt.Sscan(lines[0], &numVert)
+	adjMat := make([][]int, numVert)
+	for i:= 0; i < numVert; i++ {
+		adjMat[i] = make([]int, numVert)
+	}
+	for i := 1; i<numVert + 1; i++ {
+		toks := strings.Split(lines[i], " ")
+		if len(toks) != numVert {
+			panic("Invalid File")
+		}
+		for j := 0; j < numVert; j++ {
+			fmt.Sscan(toks[j], &adjMat[i -1][j])
+		}
+	}
+		
+	pQueue := make([]*Vertex, numVert)    // our priority queue
+	vertList := make([]*Vertex, numVert)  // our list of vertices for fast access
+	var vertTree []int                    // our list of vertices in the tree
+ 
+	for i:=0; i<numVert; i++{
+		newVertex := new(Vertex)
+		newVertex.id = i
+		newVertex.dist = 1e8
+		newVertex.parent = -1
+		for j:=0; j<numVert; j++{
+			if adjMat[i][j] != 0 {
+				newVertex.nbr = append(newVertex.nbr, j)
+			}
+		}
+		pQueue[i] = newVertex
+		vertList[i] = newVertex
+	}
+	
+	vertList[source].dist = 0
+	
+	sort.Sort(Vertices(pQueue))
+	
+	for i:=0; i<numVert; i++{
+		uStar:= pQueue[0]
+		vertTree = append(vertTree, uStar.id)
+		pQueue = pQueue[1:]
+		for _,vertIdx := range uStar.nbr {
+			u := vertList[vertIdx]
+			if !(Contains(vertTree, vertIdx)){
+				if uStar.dist + adjMat[uStar.id][u.id] < u.dist{
+					u.dist = uStar.dist + adjMat[uStar.id][u.id]
+					u.parent = uStar.id
+				}
+			}
+		}
+		sort.Sort(Vertices(pQueue))
+	}
+	fmt.Println("The distance from node",source,"to node", dest, "is", vertList[dest].dist)
+	
+	path :=  []int {dest}
+	
+	for ; path[len(path)-1] != source; {
+		parent := vertList[path[len(path)-1]].parent
+		path = append(path, parent)
+	}
+	
+	fmt.Print("The path is: ")
+	for i:=len(path) - 1; i > 0; i--{
+		fmt.Print(path[i],"->")
+	}
+	fmt.Println(path[0])
+	
+}
