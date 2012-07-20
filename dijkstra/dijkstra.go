@@ -6,6 +6,7 @@ import(
         "io/ioutil"
         "os"
         "sort"
+        "log"
 )
 // a data structure for a vertex
 type Vertex struct {
@@ -44,7 +45,8 @@ func Contains(ints []int, i int) bool {
 func main(){
 	// check the command line arguments
 	if len(os.Args) != 4 {
-		panic("Usage: ./dijkstra FILENAME SOURCE DEST")
+		fmt.Fprintln(os.Stderr, "Usage: ./dijkstra FILENAME SOURCE DEST")
+		os.Exit(1)
 	}
 	var source int             
 	var dest int
@@ -53,12 +55,20 @@ func main(){
 	fileName := os.Args[1]
 	
 	// read in data from file
-	buff,_ := ioutil.ReadFile(fileName)
+	buff,err := ioutil.ReadFile(fileName)
+	if err != nil{
+		log.Fatal(err)
+	}
 	contentString := string(buff)
 	lines := strings.Split(contentString, "\n")
 	
 	var numVert int  // number of vertices
 	fmt.Sscan(lines[0], &numVert)
+	// check that the number of lines for the matrix is consitent with the number of vertices
+	if len(lines) -1 != numVert{
+		fmt.Fprintln(os.Stderr, fileName, "is an invalid file.")
+		os.Exit(1)
+	}
 	// our adjacency matrix
 	adjMat := make([][]int, numVert)         // this is similar to new or malloc 
 	for i:= 0; i < numVert; i++ {
@@ -68,7 +78,8 @@ func main(){
 	for i := 1; i<numVert + 1; i++ {
 		toks := strings.Split(lines[i], " ")
 		if len(toks) != numVert {
-			panic("Invalid File")
+			fmt.Fprintln(os.Stderr, fileName, "is an invalid file.")
+			os.Exit(1)
 		}
 		for j := 0; j < numVert; j++ {
 			fmt.Sscan(toks[j], &adjMat[i -1][j])
